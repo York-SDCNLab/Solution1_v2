@@ -24,7 +24,7 @@ spawn_on_node(node_id=node_id) # spawn the car on the specific node
 ```
 traffic_light_process = Process(
     target=run_traffic_light, 
-    args=('auto', 1.5, None))
+    args=('auto', 5, None))
 activate_event.clear()
 traffic_light_process.start()
 time.sleep(4) # wait for the traffic light process to start
