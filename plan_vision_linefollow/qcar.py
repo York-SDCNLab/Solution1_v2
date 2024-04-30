@@ -171,7 +171,7 @@ class EVLFControl(VLFCar):
             throttle: float = self.policy.throttle * abs(math.cos(2.7 * steering)) * self.reduce_factor
             self.running_gear.read_write_std(throttle=throttle, steering=steering, LEDs=self.leds)
             # cv2.waitKey(1)
-            print(throttle)
+            # print(throttle)
         except NoContourException:
             pass
         except NoImageException:

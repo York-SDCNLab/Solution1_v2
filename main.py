@@ -70,6 +70,7 @@ def start_multiprocess_car(node_id: int = 24, throttle: float = 0.1) -> None:
     except Exception as e:
         print(e)
     finally:
+        print("Execution complete")
         sys.exit(0)
 
 if __name__ == "__main__":
