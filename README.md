@@ -1,4 +1,4 @@
-# SDCNLab Solution 1  V2.0
+# Solution 1  V2.0
 ## Introduction
 This is a solution for a competition. The control system adopts an event driven \
 architecture and features two asynchronous processes for control and monitoring, \
