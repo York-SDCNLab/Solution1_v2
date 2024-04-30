@@ -30,7 +30,7 @@ traffic_light_process.start()
 time.sleep(4) # wait for the traffic light process to start
 ```
 ## Recommended Hardware Requirements
-- CPU: Intel Core i7-9700K or AMD Ryzen 7 3700X 
+- CPU: Intel Xeno W-1290P 
 - RAM: 16GB 
 - GPU: GTX1650
 ## Note
