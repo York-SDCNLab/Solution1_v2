@@ -49,10 +49,10 @@ def start_multiprocess_car(node_id: int = 24, throttle: float = 0.1) -> None:
     )
     traffic_light_process = Process(
         target=run_traffic_light, 
-        args=('auto', 1.5, None))
+        args=('auto', 5, None))
     activate_event.clear()
     traffic_light_process.start()
-    time.sleep(4) # wait for the traffic light process to start
+    time.sleep(2) # wait for the traffic light process to start
     observer_process.start()
     while not activate_event.is_set():
         time.sleep(0.01)
