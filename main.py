@@ -1,10 +1,9 @@
 # python imports
 import sys
 import time
-import random
 from multiprocessing import Process, Event, Manager
 # modeule imports
-from path_planning.acc_roadmap import ACCRoadMap 
+from core.env.acc_roadmap import ACCRoadMap 
 from scripts.traffic_light import run_traffic_light
 # from plan_vision_linefollow.script import writer_tasks, car_tasks
 from plan_vision_linefollow import start_car, run_control_process, run_observer_process

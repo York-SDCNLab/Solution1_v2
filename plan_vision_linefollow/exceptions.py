@@ -25,7 +25,8 @@ class NoImageException(Exception):
 
 class StopException(Exception): 
     """
-    Exception raised when the car is required to stop.
+    Exception raised when the car is required to stop. It will also specify the time for which 
+    the car should stop.
 
     Attributes:
         stop_time (float): The time for which the car should stop.

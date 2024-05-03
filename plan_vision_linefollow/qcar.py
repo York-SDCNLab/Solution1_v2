@@ -8,7 +8,7 @@ from torchvision.transforms import Normalize
 # quanser imports
 from pal.products.qcar import QCar
 # custom imports
-from virtual_sensor import VirtualCSICamera, VirtualRGBDCamera
+from core.sensor import VirtualCSICamera, VirtualRGBDCamera
 from .policy import VisualLineFollowing
 from .exceptions import NoContourException, NoImageException, StopException
 from .decision_pipeline import DecisionMaker, ConvEncoder, Compose
@@ -139,7 +139,7 @@ class EVLFControl(VLFCar):
         """
         if self.event_wrapper.event.is_set(): 
             shared_events: dict = self.event_wrapper.event_types
-            if shared_events['horizontal_line']: 
+            if shared_events['horizontal_line']:
                 self.reduce_factor = 0.08 / self.policy.throttle
             else: 
                 self.reduce_factor = 1.0

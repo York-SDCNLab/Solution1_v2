@@ -1,8 +1,9 @@
+# python imports
 import cv2
 import time
 from typing import Any
 import numpy as np
-
+# custom imports
 from .utils import SignalFilter
 
 
@@ -59,16 +60,6 @@ class RawImagePipeline(object):
         self.window = np.zeros((*self.crop_size, 3), dtype = np.uint8)
         self.center = (self.crop_size[0]//2, self.crop_size[1]//2)
         self.windowshape = self.window.shape
-
-    # def set_classifier(self):
-    #     '''Sets stop sign classfier. This architetcure allows to reinitialize constants after manually modifying a
-    #     parameter
-    #     Paramaters
-    #     ----------
-    #     Returns
-    #     -------
-    #     '''
-    #     self.classifier = cv2.CascadeClassifier(self.classifier_data) 
 
     def __call__(self,img:np.ndarray, slice_image:bool = True) -> np.ndarray:
         '''__call__ will perform the main logic of the pipeline
@@ -127,9 +118,6 @@ class RawImagePipeline(object):
         if name == 'crop_size':
             super().__setattr__(name, value)
             self.set_constants()
-        # elif name == 'classifier_data':
-        #     super().__setattr__(name, value)
-        #     self.set_classifier()
         else:
             super().__setattr__(name, value)
         
@@ -175,17 +163,6 @@ class RawImagePipeline(object):
         -------
         img: np.ndarray
             Cropped image with only sign'''
-        # img_original = img.copy()
-        # imggray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)      
-        # found = self.classifier.detectMultiScale(imggray, minSize =(20, 2))
-        # if len(found)!=0:
-        #     for i in found:
-        #         (x, y, width, height) = i
-        #         print(i)
-        #         true_detection = self.determine_if_true_stop(img_original, x, y, width, height)
-        #         if true_detection:
-        #             return img_original[y:y+height, x:x+width]
-        #return default
         img_original = img.copy()
         img_hsv=cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         mask0 = cv2.inRange(img_hsv, self.red_low_thresh_sign1, self.red_high_thresh_sign1)
@@ -195,7 +172,7 @@ class RawImagePipeline(object):
         cnt,_ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         if len(cnt)>0:
-            #if we have a contour, it means we have some object with a  red color, and since the image is
+            # if we have a contour, it means we have some object with a  red color, and since the image is
             # only of the right half, this will be 99.99% the stop sign
             for cnt_ in cnt:
                 a_l = cv2.arcLength(cnt_, True)      
@@ -204,8 +181,8 @@ class RawImagePipeline(object):
                 a_ = max(a_,0)
                 if a_<1300:
                     continue
-                #ratio of area to arclength of a circle is : (4*pi^2*r^2)/pi*r^2 = 4*pi
-                #area based filtering, we dont want contours with high area or less area
+                # ratio of area to arclength of a circle is : (4*pi^2*r^2)/pi*r^2 = 4*pi
+                # area based filtering, we dont want contours with high area or less area
                 ratio = a_l_2/a_
                 if ratio> self.area_arc_constant-self.ratio_thresh and ratio<self.area_arc_constant+self.ratio_thresh and a_>200:
                     x, y, width, height = cv2.boundingRect(cnt_)
@@ -480,18 +457,12 @@ class DecisionMaker:
                 # print(self.detection_flags)
                 return
                 # print(flag)
-                # return True, 3
             self.detection_flags["stop_sign"] = False
             # print(self.detection_flags)
             return
-            # return False, 0
         elif flag=='traffic':
-            # mask = cv2.inRange(pyramid_expand(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), channel_axis= 2), self.lower, self.upper)  
-            # cv2.imshow('traffic', mask)
             # print("sum ",mask.sum()/255)
             # cv2.waitKey(1) 
-            
-            # return False, 0
             self.thesh_horizontal_line(img_back)
             if self.has_horizontal_line:
                 self.detection_flags["horizontal_line"] = self.has_horizontal_line
@@ -509,7 +480,6 @@ class DecisionMaker:
                 # print("Pass control zone")
                 # print(self.detection_flags)
                 return 
-                # return True, 0.1
             # print(self.classic_traffic_pipeline)
             if self.classic_traffic_pipeline and self.detection_flags["horizontal_line"]:
                 mask = cv2.inRange(pyramid_expand(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), channel_axis= 2), self.lower, self.upper)  
@@ -524,19 +494,10 @@ class DecisionMaker:
                     self.detection_flags["red_light"] = False
                     # print(self.detection_flags)
                     return
-                    # return False, 0
                 else:
                     self.detection_flags["red_light"] = True
                     # print(self.detection_flags)
                     return
-                
-                    # return True, 0.1
-                # if signal >= 1: # original is > 5 
-                #     print(f'modeL: red light, filter: {result}')
-                #     return True, 0.25
-                # else:
-                #     print(f'model: green light, filter: {result}')
-                #     return False, 0
             else:
                 # cv2.imshow('traffic', img)
                 # cv2.waitKey(1)
@@ -546,7 +507,6 @@ class DecisionMaker:
                 # self.detection_flags["unknown_error"] = dec
                 # print("unknown error")
                 return
-                # return dec, 0.25
 
 def flatten_batch(x: torch.Tensor, nonbatch_dims=1) -> Tuple[torch.Tensor, torch.Size]:
     if nonbatch_dims > 0:
@@ -561,6 +521,7 @@ def flatten_batch(x: torch.Tensor, nonbatch_dims=1) -> Tuple[torch.Tensor, torch
 def unflatten_batch(x: torch.Tensor, batch_dim: Union[torch.Size, Tuple]) -> torch.Tensor:
     x = torch.reshape(x, batch_dim + x.shape[1:])
     return x
+
 
 class ConvEncoder(nn.Module):
     def __init__(

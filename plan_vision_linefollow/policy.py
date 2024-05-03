@@ -25,6 +25,7 @@ class VisualLineFollowing:
         image_height (int): Height of the image.
         steering (float): Steering value for the QCar.
         throttle (float): Throttle value for the QCar.
+        dt (float): Delta time for the PID controller.
         steering_filter (Filter): Filter for the steering value.
 
     Methods:
@@ -206,7 +207,6 @@ class VisualLineFollowing:
         Returns:    
             float: Steering value for the QCar.
         """
-        
         slope: float = input[0]
         intercept: float = input[1]
         # print(f"slope: {slope}, intercept: {intercept}")
