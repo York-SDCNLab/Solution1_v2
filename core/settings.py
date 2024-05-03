@@ -1,18 +1,21 @@
 import numpy as np 
 
-INIT_CONTROLLER_STATE = {
-    'throttle': 0, 
-    'steering': 0, 
-    'cruise_throttle': 0, 
-    'control_flags': {
-        'safe': True, 
-        'reverse': False, 
-        'light': False, 
-        'cruise': False, 
-    }
-}
+# policy parameter settings
+DEFAULT_SLOPE_OFFSET: float = -0.7718322998996283
+DEFAULT_INTERCEPT_OFFSET: float = 400.0
+EDGES_LOWER_BOUND: int = 50
+EDGES_UPPER_BOUND: int = 150
+HOUGH_ANGLE_UPPER_BOUND: int = 160
+HOUGH_ANGLE_LOWER_BOUND: int = 100
+HOUGH_CONFIDENT_THRESHOLD: int = 85
+THRESH_UPPER_BOUND: int = 255
+THRESH_LOWER_BOUND: int = 100
+DEFAULT_K_P: float = -1.0163443448
+DEFAULT_K_I: float = -0.000
+DEFAULT_K_D: float = -0.19878977558
 
-CSI_CAMERA_SETTING = {
+# camera parameter settings
+CSI_CAMERA_SETTING: dict = {
     'focal_length': np.array([[157.9], [161.7]], dtype = np.float64) , 
     'principle_point': np.array([[168.5], [123.6]], dtype = np.float64), 
     'position': np.array([[0], [0], [0.14]], dtype = np.float64), 
@@ -22,7 +25,7 @@ CSI_CAMERA_SETTING = {
     'frame_rate': 70.0
 }
 
-RGBD_CAMERA_SETTING = {
+RGBD_CAMERA_SETTING: dict = {
     'mode': 'RGB', 
     'frame_width_rgb': 640, 
     'frame_height_rgb': 480, 

@@ -1,219 +1,81 @@
-import io
+# python imports
 import os
-import sys
-import time
-import torch
-import mlflow
-import logging
-import tempfile
+import csv
+import cv2
+# 3rd party imports
 import numpy as np
-from pathlib import Path
-from typing import Dict, List
-from mlflow.store.artifact.artifact_repo import ArtifactRepository
 
-class LogColorFormatter(logging.Formatter):
-    GREY = '\033[90m'
-    WHITE = '\033[37m'
-    GREEN = '\033[32m'
-    YELLOW = '\033[33m'
-    RED = '\033[31m'
-    RED_UNDERLINE = '\033[4;31m'
 
-    def __init__(
-        self, 
-        fmt, 
-        debug_color=GREY,
-        info_color=None,
-        warning_color=YELLOW,
-        error_color=RED,
-        critical_color=RED_UNDERLINE
-    ):
-        super().__init__(fmt)
-        self.fmt = fmt
-        self.debug_color = debug_color
-        self.info_color = info_color
-        self.warning_color = warning_color
-        self.error_color = error_color
-        self.critical_color = critical_color
+class DataWriter: 
+    """
+    Data writer class for recording training data.
+    
+    Attributes:
+        data_path (str): Path to the training data folder.
+        csv_filepath (str): Path to the training data CSV file.
+        counter (int): Counter for the training data.
+    
+    Methods:
+        setup() -> None:
+            Sets up the training data folder.
+        record_data(image_path: str, speed: float, steering: float) -> None:
+            Records the training data to the CSV file.
+        execute(image: np.ndarray, speed: float, steering: float) -> None:
+            Executes the data recording operation.
+    """
 
-    def format(self, record):
-        RESET = '\033[0m'
-        if record.levelno == logging.DEBUG:
-            fmt = f'{self.debug_color or ""}{self.fmt}{RESET}'
-        elif record.levelno == logging.INFO:
-            fmt = f'{self.info_color or ""}{self.fmt}{RESET}'
-        elif record.levelno == logging.WARNING:
-            fmt = f'{self.warning_color or ""}{self.fmt}{RESET}'
-        elif record.levelno == logging.ERROR:
-            fmt = f'{self.error_color or ""}{self.fmt}{RESET}'
-        elif record.levelno == logging.CRITICAL:
-            fmt = f'{self.critical_color or ""}{self.fmt}{RESET}'
-        else:
-            fmt = self.fmt
-        return logging.Formatter(fmt).format(record)
+    def __init__(self, folder_name: str = 'training_data', csv_name: str = 'training_data') -> None:
+        """
+        Initializes the DataWriter class with the specified folder name and CSV name.
 
-def configure_logging(prefix='[%(name)s]', level=logging.DEBUG, info_color=None):
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(level)
-    handler.setFormatter(
-        LogColorFormatter(
-            f'{prefix}  %(message)s',
-            info_color=info_color
-        )
-    )
-    logging.root.setLevel(level)
-    logging.root.handlers = [handler]
-    for logname in ['urllib3', 'requests', 'mlflow', 'git', 'azure', 'PIL', 'numba', 'google.auth', 'rosout']:
-        logging.getLogger(logname).setLevel(logging.WARNING)  # disable other loggers
-    for logname in ['absl', 'minerl']:
-        logging.getLogger(logname).setLevel(logging.INFO)
+        Parameters:
+            folder_name (str): Name of the training data folder.
+            csv_name (str): Name of the training data CSV file.
+        """
+        current_path: str = os.getcwd()
+        self.data_path: str = os.path.join(current_path, folder_name)
+        self.csv_filepath: str = os.path.join(self.data_path, csv_name)
+        self.counter: int = 0
 
-def mlflow_init(mlruns_dir="file:///Users/hunte/OneDrive/Desktop/acc_2024/mlruns"):
-    run_name = os.environ.get("MLFLOW_RUN_NAME")
-    resume_id = os.environ.get("MLFLOW_RESUME_ID")
-    uri = os.environ.get("MLFLOW_TRACKING_URI", mlruns_dir)
-    mlflow.set_tracking_uri(uri)
+    def setup(self) -> None: 
+        """
+        Sets up the training data folder.
 
-    run = mlflow.active_run()
-    if run:
-        pass
-    elif os.environ.get("MLFLOW_RUN_ID"):
-        run = mlflow.start_run(run_id=os.environ.get("MLFLOW_RUN_ID"))
-        logging.info(f'Reinitialized mlflow run {run.info.run_id} ({resume_id}) in {uri}/{run.info.experiment_id}')
-    else:
-        resume_run_id = None
-        if resume_id:
-            runs = mlflow.search_runs(filter_string=f'tags.resume_id={resume_id}')
-            if len(runs) > 0:
-                resume_run_id = runs.run_id.iloc[0]
+        Returns:
+            None
+        """
+        if not os.path.exists(self.data_path): 
+            os.makedirs(self.data_path)
 
-        if resume_run_id:
-            run = mlflow.start_run(run_id=resume_run_id)
-            logging.info(f'Resumed mlflow run {run.info.run_id} ({resume_id}) in {uri}/{run.info.experiment_id}')
-        else:
-            run = mlflow.start_run(run_name=run_name, tags={"resume_id": resume_id or ""})
-            logging.info(f'Started mlflow run {run.info.run_id} ({resume_id}) in {uri}/{run.info.experiment_id}')
+    def record_data(self, image_path: str, speed: float, steering: float = None) -> None: 
+        """
+        Records the training data to the CSV file.
 
-    os.environ["MLFLOW_RUN_ID"] = run.info.run_id
-    return run
+        Parameters:
+            image_path (str): Path to the training image.
+            speed (float): Speed value for the QCar.
+            steering (float): Steering value for the QCar.
 
-def load_checkpoint(model, mlruns_dir, run_id, map_location="cpu"):
-    path = Path(mlruns_dir[8:]) / "0" / run_id / "latest.pt"
-    try:
-        checkpoint = torch.load(path, map_location=map_location)
-    except Exception as e:
-        logging.exception('Error reading checkpoint')
-        return None
+        Returns:
+            None
+        """
+        with open(self.csv_filepath, 'a', newline='') as csvfile: 
+            writer = csv.writer(csvfile) 
+            writer.writerow([image_path, speed, steering])
 
-    model.load_state_dict(checkpoint['model_state_dict'])
-    return checkpoint["epoch"]
+    def execute(self, image: np.ndarray, speed: float, steering: float) -> None: 
+        """
+        The data recording operation for the Device.
 
-def mlflow_load_checkpoint(model, run_id=None, optimizers=tuple(), artifact_path="checkpoints/latest.pt", map_location=None):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        run_id = run_id if run_id is not None else mlflow.active_run().info.run_id
+        Parameters:
+            image (np.ndarray): Input image for the QCar.
+            speed (float): Speed value for the QCar.
+            steering (float): Steering value for the QCar.
 
-        try:
-            path = mlflow.artifacts.download_artifacts(run_id=run_id, artifact_path=artifact_path, dst_path=tmpdir)
-        except Exception as e:
-            return None
-        
-        try:
-            checkpoint = torch.load(path, map_location=map_location)
-        except:
-            logging.exception('Error reading checkpoint')
-            return None
-        
-        model.load_state_dict(checkpoint['model_state_dict'])
-        for i, opt in enumerate(optimizers):
-            opt.load_state_dict(checkpoint[f'optimizer_{i}_state_dict'])
-
-        return checkpoint["epoch"]
-
-def mlflow_save_checkpoint(model, optimizers, steps, mlruns_dir=None, run_id=None):
-    if mlruns_dir is None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = Path(tmpdir) / 'latest.pt'
-            path_step = Path(tmpdir) / 'step_{}.pt'.format(steps)
-            checkpoint = {}
-            checkpoint['epoch'] = steps
-            checkpoint['model_state_dict'] = model.state_dict()
-            for i, opt in enumerate(optimizers):
-                checkpoint[f'optimizer_{i}_state_dict'] = opt.state_dict()
-            torch.save(checkpoint, path)
-            mlflow_log_artifact(path, subdir='checkpoints')
-
-            if steps % 10000 == 0:
-                torch.save(checkpoint, path_step)
-                mlflow_log_artifact(path_step, subdir='checkpoints')
-    else:
-        assert run_id is not None, "Need to provide run_id if providing direct mlrun path"
-
-        path = Path(mlruns_dir) / "0" / run_id / "latest.pt"
-        checkpoint = {}
-        checkpoint['epoch'] = steps
-        checkpoint['model_state_dict'] = model.state_dict()
-        for i, opt in enumerate(optimizers):
-            checkpoint[f'optimizer_{i}_state_dict'] = opt.state_dict()
-        torch.save(checkpoint, path)
-        mlflow_log_artifact(mlflow_path, subdir='checkpoints')
-
-def mlflow_log_metrics(metrics: dict, step: int):
-    while True:
-        try:
-            mlflow.log_metrics(metrics, step=step)
-            break
-        except:
-            logging.exception('Error logging metrics - will retry.')
-            time.sleep(10)
-
-def mlflow_log_npz(data: dict, name, subdir=None, verbose=False, repository: ArtifactRepository = None, mlruns_dir = None):
-    if mlruns_dir is None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpfile = Path(tmpdir) / name
-            save_npz(data, tmpfile)
-            mlflow_log_artifact(tmpfile, subdir, verbose, repository)
-    else:
-        path = Path(mlruns_dir) / name
-        save_npz(data, path)
-        mlflow_log_artifact(path, subdir, verbose, repository)
-
-def save_npz(data, path):
-    with io.BytesIO() as f1:
-        np.savez_compressed(f1, **data)
-        f1.seek(0)
-        with path.open('wb') as f2:
-            f2.write(f1.read())
-
-def mlflow_log_artifact(path: Path, subdir=None, verbose=True, repository: ArtifactRepository = None):
-    if verbose:
-        logging.debug(f'Uploading artifact {subdir}/{path.name} size {path.stat().st_size/1024/1024:.2f} MB')
-    while True:
-        try:
-            if repository:
-                repository.log_artifact(str(path), artifact_path=subdir)
-            else:
-                mlflow.log_artifact(str(path), artifact_path=subdir)
-            break
-        except:
-            logging.exception('Error saving artifact - will retry.')
-            time.sleep(10)
-
-def mlflow_load_npz(name, repository: ArtifactRepository):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpfile = Path(tmpdir) / name
-        repository._download_file(name, tmpfile)
-        return load_npz(tmpfile)
-
-def load_npz(path, keys=None) -> Dict[str, np.ndarray]:
-    with path.open('rb') as f:
-        fdata: Dict[str, np.ndarray] = np.load(f)
-
-        if keys is None:
-            data = {key: fdata[key] for key in fdata}
-        else:
-            data = {key: fdata[key] for key in keys}
-
-        return data
-
-if __name__ == "__main__":
-    pass
+        Returns:    
+            None
+        """
+        image_path: str = os.path.join(self.data_path, 'image_{}.jpg'.format(self.counter) ) 
+        self.record_data(image_path, speed, steering)
+        cv2.imwrite(image_path, image)
+        self.counter += 1

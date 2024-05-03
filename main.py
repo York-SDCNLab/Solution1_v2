@@ -3,7 +3,7 @@ import sys
 import time
 from multiprocessing import Process, Event, Manager
 # modeule imports
-from core.env.acc_roadmap import ACCRoadMap 
+from core.roadmap.acc_roadmap import ACCRoadMap 
 # from plan_vision_linefollow.script import writer_tasks, car_tasks
 from plan_vision_linefollow import start_car, run_control_process, run_observer_process
 from plan_vision_linefollow.utils import EventWrapper

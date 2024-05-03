@@ -6,6 +6,11 @@ import cv2
 from pal.utilities.math import *
 from hal.utilities.image_processing import ImageProcessing
 # custom imports
+from core.settings import DEFAULT_SLOPE_OFFSET, DEFAULT_INTERCEPT_OFFSET
+from core.settings import EDGES_LOWER_BOUND, EDGES_UPPER_BOUND
+from core.settings import THRESH_LOWER_BOUND, THRESH_UPPER_BOUND
+from core.settings import HOUGH_CONFIDENT_THRESHOLD
+from core.settings import HOUGH_ANGLE_UPPER_BOUND, HOUGH_ANGLE_LOWER_BOUND
 from .exceptions import NoImageException, NoContourException
 
 
@@ -52,8 +57,8 @@ class VisualLineFollowing:
             image_height (int): Height of the input image.
             throttle (float): Throttle value for the QCar.
         """
-        self.slope_offset: float = -0.7718322998996283
-        self.intercept_offset: float = 405 # 450.1033252934936 # 527.665286400669
+        self.slope_offset: float = DEFAULT_SLOPE_OFFSET
+        self.intercept_offset: float = DEFAULT_INTERCEPT_OFFSET # 405 # 450.1033252934936 # 527.665286400669
         self.integral_error: float = 0.0
         self.cross_err: float = 0.0
         self.pre_cross_err: float = 0.0
@@ -68,7 +73,7 @@ class VisualLineFollowing:
         self.steering_filter = Filter().low_pass_first_order_variable(90, 0.01)
         next(self.steering_filter)
 
-    def setup(self, k_p: float = -1.016344345, k_i: float = -0.000, k_d:float = -0.1987897755) -> None: #self, k_p: float = -1.2, k_i: float = -0.000, k_d:float = -0.15
+    def setup(self, k_p: float, k_i: float, k_d:float) -> None: #self, k_p: float = -1.2, k_i: float = -0.000, k_d:float = -0.15
         """
         Sets up the PID controller with the specified gains.
 
@@ -119,10 +124,15 @@ class VisualLineFollowing:
         if grey_image is None: 
             raise NoImageException()
         # thresholds of the line angles
-        min_angle: float = 100
-        max_angle: float = 160
-        edges: np.ndarray = cv2.Canny(grey_image, 50, 150, apertureSize=3)
-        lines: np.ndarray = cv2.HoughLines(edges, 1, np.pi/180, 85)
+        min_angle: float = HOUGH_ANGLE_LOWER_BOUND
+        max_angle: float = HOUGH_ANGLE_UPPER_BOUND
+        edges: np.ndarray = cv2.Canny(
+            grey_image, 
+            EDGES_LOWER_BOUND, 
+            EDGES_UPPER_BOUND, 
+            apertureSize=3
+        ) #fine tune the threshold
+        lines: np.ndarray = cv2.HoughLines(edges, 1, np.pi/180, HOUGH_CONFIDENT_THRESHOLD)
         if lines is None: 
             # cv2.imshow("HoughLine", grey_image)
             return grey_image 
@@ -162,7 +172,12 @@ class VisualLineFollowing:
         blurred_image: np.ndarray = cv2.GaussianBlur(image, (9, 9), 0)
         blurred_image = ImageProcessing.image_filtering_open(blurred_image)
         # threshold the image
-        thresh: np.ndarray = cv2.threshold(blurred_image, 100, 255, cv2.THRESH_BINARY)[1]
+        thresh: np.ndarray = cv2.threshold(
+            blurred_image, 
+            THRESH_LOWER_BOUND, 
+            THRESH_UPPER_BOUND, 
+            cv2.THRESH_BINARY
+        )[1] # fine tune the threshold IM
         # find the contours
         contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -192,7 +207,7 @@ class VisualLineFollowing:
         # cv2.imshow("Mask", mask)
         # Calculate the difference between adjacent pixels
         diff: np.ndarray = cv2.Sobel(mask, cv2.CV_64F, 1, 1, ksize=15)
-        edge: np.ndarray = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY)[1]
+        edge: np.ndarray = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY)[1] # fine tune the threshold
         # cv2.imshow("Edge", edge)
         # cv2.imshow("Largest Contour", self.image)
         return edge
@@ -228,6 +243,7 @@ class VisualLineFollowing:
         self.start = time.time()
         self.integral_error += self.dt * self.cross_err
         derivetive_error: float = (self.cross_err-self.pre_cross_err) / self.dt
+        # print(self.dt)
         if self.dt > 0.1: 
             self.dt = 0.033
         # steering filter

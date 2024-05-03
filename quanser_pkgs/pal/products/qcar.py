@@ -18,9 +18,9 @@ try:
 except:
     from quanser.communications import Timeout
 
-from pal.utilities.vision import Camera2D, Camera3D
-from pal.utilities.lidar import Lidar
-from pal.utilities.stream import BasicStream
+from quanser_pkgs.pal.utilities.vision import Camera2D, Camera3D
+from quanser_pkgs.pal.utilities.lidar import Lidar
+from quanser_pkgs.pal.utilities.stream import BasicStream
 
 
 IS_PHYSICAL_QCAR = ('nvidia' == os.getlogin()) \

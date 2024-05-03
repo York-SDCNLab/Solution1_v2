@@ -36,7 +36,7 @@ class VirtualCSICamera(ServiceModule): # wrapper class, implement more functions
 
 class VirtualRGBDCamera(ServiceModule): 
     def __init__(self) -> None: 
-        self.camera = Camera3D(
+        self.camera: Camera3D = Camera3D(
             mode=RGBD_CAMERA_SETTING['mode'], 
             frameWidthRGB=RGBD_CAMERA_SETTING['frame_width_rgb'], 
             frameHeightRGB=RGBD_CAMERA_SETTING['frame_height_rgb'], 
@@ -55,7 +55,7 @@ class VirtualRGBDCamera(ServiceModule):
             # cv2.imshow('RGBD Image', self.camera.imageBufferRGB)
             return self.camera.imageBufferRGB 
 
-    def read_depth_image(self, data_mode='PX') -> np.ndarray: 
+    def read_depth_image(self, data_mode:str = 'PX') -> np.ndarray: 
         if self.camera.read_depth(data_mode) != -1: 
             if data_mode == 'PX': 
                 # cv2.imshow('RGBD PX', self.camera.imageBufferDepthPX)
@@ -71,27 +71,27 @@ class VirtualLidar(ServiceModule):
 
 class VirtualGPS(ServiceModule): 
     def __init__(self) -> None: 
-        self.gps = QCarGPS() 
-        self.speed_vector = None
-        self.speed_history = [] 
+        self.gps: QCarGPS = QCarGPS() 
+        self.speed_vector: tuple = None
+        self.speed_history: list = [] 
 
     def terminate(self) -> None: 
         self.gps.terminate() 
         # plot_line_chart(self.speed_history[1:], 'time', 'speed', 'speed chart') 
 
     def get_gps_state(self) -> tuple:  
-        position_x = self.gps.position[0] 
-        position_y = self.gps.position[1]
-        orientation = self.gps.orientation[2] 
+        position_x: float = self.gps.position[0] 
+        position_y: float = self.gps.position[1]
+        orientation: float = self.gps.orientation[2] 
 
         return position_x, position_y, orientation 
     
     def calcualte_speed_vector(self, current_state, delta_t) -> tuple: 
-        delta_x_sq = math.pow((current_state[0] - self.last_state[0]), 2)
-        delta_y_sq = math.pow((current_state[1] - self.last_state[1]), 2)
+        delta_x_sq: float = math.pow((current_state[0] - self.last_state[0]), 2)
+        delta_y_sq: float = math.pow((current_state[1] - self.last_state[1]), 2)
 
-        linear_speed = math.pow((delta_x_sq + delta_y_sq), 0.5) / delta_t 
-        angular_speed = (current_state[2] - self.last_state[2]) / delta_t
+        linear_speed: float = math.pow((delta_x_sq + delta_y_sq), 0.5) / delta_t 
+        angular_speed: float = (current_state[2] - self.last_state[2]) / delta_t
 
         return linear_speed, angular_speed 
     
@@ -99,18 +99,18 @@ class VirtualGPS(ServiceModule):
         # create or overwrite the log 
         open("output/gps_log.txt", "w") 
         # init states 
-        self.time_stamp = time.time() 
+        self.time_stamp: float = time.time() 
         self.gps.readGPS() # read gps info
-        self.last_state = self.get_gps_state() 
+        self.last_state: tuple = self.get_gps_state() 
 
     def read_gps_state(self) -> None:  
         # read current position 
         self.gps.readGPS()
-        current_time = time.time() 
-        self.current_state = self.get_gps_state() 
+        current_time: float = time.time() 
+        self.current_state: tuple = self.get_gps_state() 
         # calculate absolute speed 
         if self.current_state != self.last_state or current_time - self.time_stamp >= 0.25: 
-            delta_t = current_time - self.time_stamp 
+            delta_t: float = current_time - self.time_stamp 
             self.speed_vector = self.calcualte_speed_vector(self.current_state, delta_t)
             # self.speed_history.append(speed_vecotr[0]) 
 

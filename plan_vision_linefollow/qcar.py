@@ -9,8 +9,9 @@ from torchvision.transforms import Normalize
 from pal.products.qcar import QCar
 # custom imports
 from core.sensor import VirtualCSICamera, VirtualRGBDCamera
+from core.settings import DEFAULT_K_P, DEFAULT_K_I, DEFAULT_K_D
 from .policy import VisualLineFollowing
-from .exceptions import NoContourException, NoImageException, StopException
+from .exceptions import NoContourException, NoImageException, HaltException, StopException
 from .decision_pipeline import DecisionMaker, ConvEncoder, Compose
 from .utils import EventWrapper
 
@@ -24,12 +25,11 @@ class VLFCar:
         running_gear (QCar): Running gear for the QCar.
         leds (np.ndarray): LED array for the QCar.
         front_csi (VirtualCSICamera): Front CSI camera for the QCar.
-        counter (int): Counter for the QCar.
 
     Methods:
         setup(throttle: float = 0.1) -> None:
             Sets up the QCar with the specified throttle value.
-        halt_car() -> None:
+        halt_car(steering: float = 0.0, halt_time: float = 1.0) -> None:
             Halts the QCar.
         execute() -> None:
             Executes the QCar operation.
@@ -46,7 +46,6 @@ class VLFCar:
         self.running_gear: QCar = QCar()
         self.leds: np.ndarray = np.array([0, 0, 0, 0, 0, 0, 0, 0])
         self.front_csi: VirtualCSICamera = VirtualCSICamera()
-        self.counter: int = 0
         
     def setup(self, throttle: float = 0.1) -> None:
         """
@@ -62,11 +61,11 @@ class VLFCar:
         # _ = next(self.diff)
         # self.time_step: float = self.sample_time
         self.policy: VisualLineFollowing = VisualLineFollowing(throttle=throttle)
-        self.policy.setup() # can change K-i, K-p, K-d here
+        self.policy.setup(k_p=DEFAULT_K_P, k_i=DEFAULT_K_I, k_d=DEFAULT_K_D) # can change K-i, K-p, K-d here
         self.brake_time: float = (throttle - 0.1) / 0.16
         self.start: float = time.time()
 
-    def halt_car(self, steering: float = 0.0) -> None: 
+    def halt_car(self, steering: float = 0.0, halt_time: float = 1.0) -> None: 
         """
         Halts the QCar.
 
@@ -74,6 +73,8 @@ class VLFCar:
             None
         """
         self.running_gear.read_write_std(throttle=0, steering=steering, LEDs=self.leds)
+        time.sleep(halt_time)
+        self.policy.start = time.time()
 
     def execute(self) -> None: 
         """
@@ -84,12 +85,13 @@ class VLFCar:
         """
         # start time for stop sign
         try: 
-            start = time.time()
+            # start = time.time()
             image: np.ndarray = self.front_csi.read_image()
-            self.policy.execute_policy(image)
-            steering: float = self.policy.steering
-            throttle: float = self.policy.throttle * abs(math.cos(2.05 * steering))
-            self.running_gear.read_write_std(throttle=throttle, steering=steering, LEDs=self.leds)
+            if image is not None: 
+                self.policy.execute_policy(image)
+                steering: float = self.policy.steering
+                throttle: float = self.policy.throttle * abs(math.cos(2.05 * steering))
+                self.running_gear.read_write_std(throttle=throttle, steering=steering, LEDs=self.leds)
         except NoContourException:
             pass 
         except NoImageException:
@@ -146,11 +148,13 @@ class EVLFControl(VLFCar):
 
             if shared_events['red_light']:
                 self.halt_steering = self.policy.steering
-                raise StopException(stop_time=0.1)
+                self.halt_car(steering=self.halt_steering, halt_time=0.1)
+                raise HaltException(stop_time=0.1, message="Red Light")
             if shared_events['stop_sign']:
                 stop_time = 3 + self.brake_time # random.randint(1, 3)
                 self.halt_steering = 0.0
-                raise StopException(stop_time=stop_time)
+                self.halt_car(steering=self.halt_steering, halt_time=stop_time)
+                raise HaltException(stop_time=3, message="Stop Sign")
         else: 
             self.reduce_factor = 1.0
             
@@ -160,32 +164,31 @@ class EVLFControl(VLFCar):
 
         Returns:
             None
+
+        Raises:
+            NoContourException: Raises an exception if no contour is detected in the image 
+                processing operation.
+            HaltException: Raises an exception if the car is required to halt.
+            Exception: Raises an exception if an unknown error occurs during the execution.
         """
         try: 
             self.handle_events()
             csi_image: np.ndarray = self.front_csi.read_image() #self.front_csi.read_image()
             # delta_t = time.time() - self.start
-            self.policy.execute_policy(origin_image=csi_image)
-            self.start = time.time()
-            steering: float = self.policy.steering
-            throttle: float = self.policy.throttle * abs(math.cos(2.7 * steering)) * self.reduce_factor
-            self.running_gear.read_write_std(throttle=throttle, steering=steering, LEDs=self.leds)
-            # cv2.waitKey(1)
-            # print(throttle)
+            if csi_image is not None:
+                self.policy.execute_policy(origin_image=csi_image)
+                self.start = time.time()
+                steering: float = self.policy.steering
+                throttle: float = self.policy.throttle * abs(math.cos(2.7 * steering)) * self.reduce_factor
+                self.running_gear.read_write_std(throttle=throttle, steering=steering, LEDs=self.leds)
+                # cv2.waitKey(1)
         except NoContourException:
+            # self.policy.start = time.time()
             pass
-        except NoImageException:
-            pass
-        except StopException as e:
-            self.halt_car(self.halt_steering)
-            stop_time = e.stop_time
-            # print(f'Stop for {stop_time} seconds')
-            time.sleep(stop_time)
-            self.policy.start = time.time()
-            # self.stop_event.clear()
+        except HaltException as e:
+            print(f"Stop {e.stop_time} seconds for {e.message}")
         except Exception as e:
-            print(e)
-            raise e
+            raise e # transmit the exception to the main process
 
 
 class EVLFObserver: 
@@ -232,6 +235,9 @@ class EVLFObserver:
 
         Returns:
             None
+
+        Raises:
+            Exception: Raises an exception if an unknown error occurs during the execution.
         """
         try: 
             rgbd_image: np.ndarray = self.rgbd.read_rgb_image()

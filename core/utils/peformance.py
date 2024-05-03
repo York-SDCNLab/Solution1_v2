@@ -9,6 +9,15 @@ RECOMMENDED_THROTTLES = {
 }
 
 def test_control_rate(control) -> float:
+    """
+    Test the control rate of the QCar control process.
+
+    Parameters:
+        control: The control process for the QCar.
+
+    Returns:
+        float: The average control rate of the QCar control process.
+    """
     test_history: list = []
 
     try: 
@@ -27,6 +36,15 @@ def test_control_rate(control) -> float:
     return sum(test_history) / len(test_history)
 
 def get_recommended_throttle(average_rate: float) -> float: 
+    """
+    Get the recommended throttle value for the QCar control process.
+
+    Parameters:
+        average_rate (float): The average control rate of the QCar control process.
+    
+    Returns:
+        float: The recommended throttle value for the QCar control process.
+    """
     proccesed_rate: int = round(average_rate / 10) * 10
     closest_rate = min(RECOMMENDED_THROTTLES.keys(), key=lambda k: abs(k - proccesed_rate))
     if closest_rate in RECOMMENDED_THROTTLES.keys(): 

@@ -72,6 +72,7 @@ def run_control_process(stop_event: EventWrapper, throttle: int = 0.1) -> None:
         control.halt_car()
     except Exception as e:
         print(e)
+        raise e
     finally: 
         sys.exit(0)
 
@@ -100,6 +101,9 @@ def run_observer_process(stop_event: EventWrapper, activate_event) -> None:
         while True: 
             observer.execute()
             # cv2.waitKey(1)
-    except KeyboardInterrupt:
+    except Exception as e:
+        print(e)
+        raise e
+    finally: 
         sys.exit(0)
 

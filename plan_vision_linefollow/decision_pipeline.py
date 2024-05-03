@@ -171,20 +171,20 @@ class RawImagePipeline(object):
         mask =  cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((10,10),np.uint8))
         cnt,_ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
-        if len(cnt)>0:
-            # if we have a contour, it means we have some object with a  red color, and since the image is
+        if len(cnt) > 0:
+            # if we have a contour, it means we have some object with a red color, and since the image is
             # only of the right half, this will be 99.99% the stop sign
             for cnt_ in cnt:
                 a_l = cv2.arcLength(cnt_, True)      
                 a_l_2 = a_l**2           
                 a_ = cv2.contourArea(cnt_)
                 a_ = max(a_,0)
-                if a_<1300:
+                if a_ < 1200: # 1300:
                     continue
                 # ratio of area to arclength of a circle is : (4*pi^2*r^2)/pi*r^2 = 4*pi
                 # area based filtering, we dont want contours with high area or less area
-                ratio = a_l_2/a_
-                if ratio> self.area_arc_constant-self.ratio_thresh and ratio<self.area_arc_constant+self.ratio_thresh and a_>200:
+                ratio = a_l_2 / a_
+                if ratio> self.area_arc_constant-self.ratio_thresh and ratio<self.area_arc_constant+self.ratio_thresh and a_> 200:
                     x, y, width, height = cv2.boundingRect(cnt_)
                     self.found_flag = True
                     return img_original[y:y+height, x:x+width]
@@ -480,6 +480,7 @@ class DecisionMaker:
                 # print("Pass control zone")
                 # print(self.detection_flags)
                 return 
+            
             # print(self.classic_traffic_pipeline)
             if self.classic_traffic_pipeline and self.detection_flags["horizontal_line"]:
                 mask = cv2.inRange(pyramid_expand(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), channel_axis= 2), self.lower, self.upper)  
