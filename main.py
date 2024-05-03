@@ -4,7 +4,6 @@ import time
 from multiprocessing import Process, Event, Manager
 # modeule imports
 from core.env.acc_roadmap import ACCRoadMap 
-from scripts.traffic_light import run_traffic_light
 # from plan_vision_linefollow.script import writer_tasks, car_tasks
 from plan_vision_linefollow import start_car, run_control_process, run_observer_process
 from plan_vision_linefollow.utils import EventWrapper
@@ -38,34 +37,21 @@ def start_multiprocess_car(node_id: int = 24, throttle: float = 0.1) -> None:
     events_warpper.setup(events)
     activate_event = Event()
     # initialize processes
-    control_process: Process = Process(
-        target=run_control_process, 
-        args=(events_warpper, throttle)
-    ) # change the second argument of control_process to change the throttle
     observer_process: Process = Process(
         target=run_observer_process, 
         args=(events_warpper, activate_event)
     )
-    traffic_light_process = Process(
-        target=run_traffic_light, 
-        args=('auto', 5, None))
-    activate_event.clear()
-    traffic_light_process.start()
-    time.sleep(2) # wait for the traffic light process to start
+    # start the observer process
     observer_process.start()
     while not activate_event.is_set():
         time.sleep(0.01)
-        continue
-    activate_event.clear()
-    control_process.start()
+    time.sleep(2) # wait for the observer to start
+    run_control_process(events_warpper, throttle=throttle)    
     try: 
-        # run_traffic_light(mode='manual', sleep_time=1.5, process=control_process)
         while True: 
             time.sleep(100)
     except KeyboardInterrupt: 
-        control_process.terminate()
         observer_process.terminate()
-        # traffic_light_process.terminate()
     except Exception as e:
         print(e)
     finally:

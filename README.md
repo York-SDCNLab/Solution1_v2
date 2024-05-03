@@ -12,10 +12,7 @@ the local dependencies. Once done, you can install the project dependencies by r
 ```pip install -r requirements.txt```
 
 3. Now the project is set up! You can run ```python main.py``` to begin running our \
-solution. Note that we have separate processes in ```main.py``` for running the \
-traffic light control and map generation. These are identical to the provided \
-```Setup_Competition.py``` and ```Traffic_Lights_competition.py``` scripts, however \
-if you want to run these scripts manually, you can comment the following lines in main.py.
+solution. 
 
 ```
 spawn_on_node(node_id=node_id) # spawn the car on the specific node
