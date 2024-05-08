@@ -10,7 +10,7 @@ This is a solution for the competition. The control system adopts an event drive
 ```git clone https://github.com/York-SDCNLab/Solution1_v2.git```.
 
 2. Navigate to /path/to/Solution1 and run ```pip install -e .``` to setup 
-the local dependencies. Once done, you can install the project dependencies by runnig ```pip install -r requirements.txt```. 
+the local dependencies. Once done, you can install the project dependencies by runnig ```pip install -r requirements.txt``` (Sometimes, there may have some conflicts when installing the dependencies, you can ignore and proceed to the next step). 
 
 3. Now the project is set up! You can run ```python main.py``` to run this solution with default pwm or command like ```python main.py 0.15``` to run this solution with specified pwm value. 
 ## Note
@@ -22,6 +22,5 @@ the local dependencies. Once done, you can install the project dependencies by r
 2. The qlab's fps will also influence the performance of this solution, the recommended fps for this solution is 30. If the fps is much lower than 30, the recommended throttle is 0.1
 3. Sometimes not all processes are properly activated due to some communication issues with the qlab, you can rerun the solution after entering the map again.
 4. We are using our own functions to generate map and control the traffic light. If you want to run `Setup_Competition.py` and `Traffic_Lights_Competition.py`, comment out `spawn_on_node(node_id=node_id) # spawn the car on the specific node` in the main.py and run `Setup_Competition.py` and `Traffic_Lights_Competition.py` to setup the map <b>before</b> starting the solution.
-5. Sometimes, there may have some conflict when installing the dependencies, you can still try to run this solution when these problems occur.  
 
 
