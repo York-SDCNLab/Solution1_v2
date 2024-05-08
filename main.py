@@ -60,4 +60,14 @@ def start_multiprocess_car(node_id: int = 24, throttle: float = 0.1) -> None:
 
 if __name__ == "__main__":
     # Uncomment the spawn on node and traffic light process if you want
-    start_multiprocess_car(node_id=24, throttle=0.18) # Recommended throttle value is 0.13 - 0.18
+    if len(sys.argv) == 1: 
+        # Recommended throttle value is 0.13 - 0.18
+        start_multiprocess_car(node_id=24, throttle=0.18) 
+    elif len(sys.argv) > 1:
+        try: 
+            throttle: float = float(sys.argv[1])
+            start_multiprocess_car(node_id=24, throttle=throttle)
+        except Exception: 
+            print("The input should be a float") 
+    else: 
+        print("The input should be a float")

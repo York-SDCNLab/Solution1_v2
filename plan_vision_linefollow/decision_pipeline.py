@@ -264,7 +264,6 @@ class RawImagePipeline(object):
 #class for performing traffic identification
 #The raw image should be fed into this class.
 from typing import Union, Tuple, Callable
-import torch, torch.nn as nn
 from skimage.transform import pyramid_expand
 import matplotlib.pyplot as plt
 
@@ -276,7 +275,7 @@ class Identity:
 
 
 class WrapCallableDevice:
-    def __init__(self, callable_method:Callable, device:Union[str, torch.device] ) -> None:
+    def __init__(self, callable_method:Callable, device:str) -> None:
         '''Wraps callable such that their output tensors returns the Tensor in the device 
         Parameters
         ----------
@@ -318,7 +317,7 @@ class Compose:
 class DecisionMaker:
     def __init__(self, stop_sign_ignore_interval:int = 5, classic_traffic_pipeline:bool = False,
                   network_class:Any = None, input_preprocess:Any = Identity(), output_postprocess:Any = Identity(),
-                  weights_file:str=None, device:Union[str, torch.device] = 'cpu') -> None:
+                  weights_file:str=None, device:str = 'cpu') -> None:
         '''Parameters
            ----------
            stop_sign_ignore_interval: int
@@ -353,12 +352,6 @@ class DecisionMaker:
             self.lower = (225/255, 40/255,10/255)#(214, 19,0)#np.array([7, 218, 223])
             self.upper =  (255/255, 78/255, 35/255)#(255, 112, 30)#np.array([15, 255, 255])
             # self.output_postprocess = 0.0
-        else:
-            self.net = network_class().to(device=device)
-            self.net.load_state_dict(torch.load(weights_file, map_location=device))
-            self.net = self.net.eval()
-            self.input_preprocess = input_preprocess
-            self.output_postprocess = output_postprocess
         self.classic_traffic_pipeline = classic_traffic_pipeline
         self.has_horizontal_line = False
         self.has_horizontal_line_decay_time = time.time()
@@ -508,69 +501,5 @@ class DecisionMaker:
                 # self.detection_flags["unknown_error"] = dec
                 # print("unknown error")
                 return
-
-def flatten_batch(x: torch.Tensor, nonbatch_dims=1) -> Tuple[torch.Tensor, torch.Size]:
-    if nonbatch_dims > 0:
-        batch_dim = x.shape[:-nonbatch_dims]
-        x = torch.reshape(x, (-1,) + x.shape[-nonbatch_dims:])
-    else:
-        batch_dim = x.shape
-        x = torch.reshape(x, (-1,))
-
-    return x, batch_dim
-
-def unflatten_batch(x: torch.Tensor, batch_dim: Union[torch.Size, Tuple]) -> torch.Tensor:
-    x = torch.reshape(x, batch_dim + x.shape[1:])
-    return x
-
-
-class ConvEncoder(nn.Module):
-    def __init__(
-        self,
-        in_channels: int = 3,
-        depth: int = 32,
-        activation = nn.ELU
-    ):
-        super().__init__()
-
-        self.out_dim = 8960
-        self.conv_model = nn.Sequential(
-            nn.Conv2d(3, 4, kernel_size=2, stride=2, padding=1),
-            activation(),
-            nn.Conv2d(4, 8, kernel_size=2, stride=2, padding=1),
-            activation(),
-            nn.Flatten()
-        )
-        self.dense_model = nn.Sequential(  
-            #nn.Linear(128 * 30 * 40, 512),
-            nn.Linear(5408, 512),
-            activation(),
-            nn.Linear(512, 256),
-            activation(),
-            nn.Linear(256, 4)
-        )
-
-    def forward(self, x):
-        x, bd = flatten_batch(x, 3)
-        y = self.conv_model(x)
-
-        y = self.dense_model(y)
-        y = unflatten_batch(y, bd)
-        return y
-
-if __name__ =="__main__":   
-    '''TESTS'''
-    from torchvision.transforms import Normalize
-    pipeline = DecisionMaker(
-        classic_traffic_pipeline=False,
-        network_class=ConvEncoder, 
-        input_preprocess= Compose(
-            lambda x: x.transpose(2,0,1).astype(np.float32)/255, 
-            lambda x: torch.from_numpy(x).to('cuda') ,
-            Normalize(mean=(0.5,0.5,0.5),std=(0.5,0.5,0.5 ))
-        ),
-        output_postprocess=lambda x: x.argmax(),
-        weights_file='model_weights_final_1999.qcar'
-    )
-    
+            
     

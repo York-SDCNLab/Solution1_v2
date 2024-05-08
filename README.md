@@ -29,7 +29,7 @@ time.sleep(2) # wait for the traffic light process to start
 ## Recommended Hardware Requirements
 - CPU: Intel Xeno W-1290P 
 - RAM: 16GB 
-- GPU: GTX1650
+- GPU: Quadro RTX4000
 ## Note
 1. Generally, the performance of this solution is dependent on the frame rate of the csi camera. The \
 recommended throttle (PWM) setting are as follows: 
@@ -37,6 +37,8 @@ recommended throttle (PWM) setting are as follows:
 - frame_rate 30 - 40Hz, throttle: up to 0.16    
 - frame_rate 40 - 50Hz, throttle: up to 0.17    
 - frame_rate above 50Hz, throttle: up to 0.18 
-2. Sometimes not all processes are properly activated due to some communication issues \
+2. The qlab's fps will also influence the performance of this solution, the recommended fps for \
+this solution is 30. if the fps is much lower than 30, the recommended throttle is 0.1
+3. Sometimes not all processes are properly activated due to some communication issues \
 with the qlab, you can rerun the solution after entering the map again.
 

@@ -2,9 +2,9 @@
 import time
 import math
 # 3rd party imports
+import cv2
 import numpy as np 
-import torch
-from torchvision.transforms import Normalize
+# import torch
 # quanser imports
 from pal.products.qcar import QCar
 # custom imports
@@ -12,7 +12,7 @@ from core.sensor import VirtualCSICamera, VirtualRGBDCamera
 from core.settings import DEFAULT_K_P, DEFAULT_K_I, DEFAULT_K_D
 from .policy import VisualLineFollowing
 from .exceptions import NoContourException, NoImageException, HaltException, StopException
-from .decision_pipeline import DecisionMaker, ConvEncoder, Compose
+from .decision_pipeline import DecisionMaker, Compose
 from .utils import EventWrapper
 
 
@@ -87,11 +87,10 @@ class VLFCar:
         try: 
             # start = time.time()
             image: np.ndarray = self.front_csi.read_image()
-            if image is not None: 
-                self.policy.execute_policy(image)
-                steering: float = self.policy.steering
-                throttle: float = self.policy.throttle * abs(math.cos(2.05 * steering))
-                self.running_gear.read_write_std(throttle=throttle, steering=steering, LEDs=self.leds)
+            self.policy.execute_policy(image)
+            steering: float = self.policy.steering
+            throttle: float = self.policy.throttle * abs(math.cos(2.05 * steering))
+            self.running_gear.read_write_std(throttle=throttle, steering=steering, LEDs=self.leds)
         except NoContourException:
             pass 
         except NoImageException:
@@ -175,15 +174,16 @@ class EVLFControl(VLFCar):
             self.handle_events()
             csi_image: np.ndarray = self.front_csi.read_image() #self.front_csi.read_image()
             # delta_t = time.time() - self.start
-            if csi_image is not None:
-                self.policy.execute_policy(origin_image=csi_image)
-                self.start = time.time()
-                steering: float = self.policy.steering
-                throttle: float = self.policy.throttle * abs(math.cos(2.7 * steering)) * self.reduce_factor
-                self.running_gear.read_write_std(throttle=throttle, steering=steering, LEDs=self.leds)
-                # cv2.waitKey(1)
+            self.policy.execute_policy(origin_image=csi_image)
+            self.start = time.time()
+            steering: float = self.policy.steering
+            throttle: float = self.policy.throttle * abs(math.cos(2.7 * steering)) * self.reduce_factor
+            self.running_gear.read_write_std(throttle=throttle, steering=steering, LEDs=self.leds)
+            # cv2.waitKey(1)
         except NoContourException:
             # self.policy.start = time.time()
+            pass
+        except NoImageException: 
             pass
         except HaltException as e:
             print(f"Stop {e.stop_time} seconds for {e.message}")
@@ -218,12 +218,8 @@ class EVLFObserver:
         self.rgbd: VirtualRGBDCamera = VirtualRGBDCamera()
         self.pipeline = DecisionMaker(
             classic_traffic_pipeline=True,
-            network_class=ConvEncoder, 
-            input_preprocess= Compose(
-                lambda x: x.transpose(2,0,1).astype(np.float32)/255, 
-                lambda x: torch.from_numpy(x).to('cuda') ,
-                Normalize(mean=(0.5,0.5,0.5),std=(0.5,0.5,0.5 ))
-            ),
+            network_class=None, 
+            input_preprocess= None,
             output_postprocess=lambda x: x.argmax().item(),
             weights_file=file_path, # 'plan_vision_linefollow/model_weights_final_1999.qcar',
             device='cuda'

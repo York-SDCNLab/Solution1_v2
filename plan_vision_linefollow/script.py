@@ -57,9 +57,11 @@ def run_control_process(stop_event: EventWrapper, throttle: int = 0.1) -> None:
         control.setup(throttle=0.0)
         # test the hardware performance
         average_rate: float = test_control_rate(control)
+        print(average_rate)
         recommended_throttle: float = get_recommended_throttle(average_rate)
         if throttle > recommended_throttle: 
             throttle = recommended_throttle
+        print(f"Will run with {throttle}")
         # set up the formal throttle
         control.setup(throttle=throttle)
         print("Starting control process...")
