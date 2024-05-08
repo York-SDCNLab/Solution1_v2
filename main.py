@@ -46,7 +46,7 @@ def start_multiprocess_car(node_id: int = 24, throttle: float = 0.1) -> None:
     while not activate_event.is_set():
         time.sleep(0.01)
     time.sleep(2) # wait for the observer to start
-    run_control_process(events_warpper, throttle=throttle)    
+    run_control_process(events_warpper, throttle=throttle)  
     try: 
         while True: 
             time.sleep(100)
